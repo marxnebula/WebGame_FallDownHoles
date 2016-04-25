@@ -1,25 +1,27 @@
 
 /*
- * Kill certain # of zombies or survive the timer.
+ * Kill monsters as you find the button to open the cellar door.  There is a false button that releases more monsters.
+ * See how many cellar doors you can fall through.
  */
 var game = undefined;
 
-var dff = {
+var tds = {
 
     start: function() {
 
         game = new Phaser.Game(800, 600, Phaser.CANVAS, 'game', {
-            preload: dff.preload,
-            create: dff.create,
-            update: dff.update,
-            render: dff.render
+            preload: tds.preload,
+            create: tds.create,
+            update: tds.update,
+            render: tds.render,
+            goodbye: tds.goodbye
         });
 
     },
 
     init: function() {
 
-        dff.start();
+        tds.start();
 
     },
 
@@ -27,17 +29,35 @@ var dff = {
         /* Loading resources (images and things) */
 
         // Load the main chacater image
-        game.load.image('mainCharacter', 'images/arrow.png');
+        game.load.image('mainCharacter', 'images/MainCharacter.png');
         
         // Load the bullet image
-        game.load.image('bullet', 'images/bullet.png');
+        game.load.image('bullet', 'images/Arrow.png');
 
-        // Load airplane
-        game.load.image('airplane', 'images/airplane.png');
+        // Load Monster
+        game.load.image('monster', 'images/Monster.png');
+        
+        // Load Special Monster
+        game.load.image('monsterspecial', 'images/MonsterSpecial.png');
+        
+        // Load the button
+        game.load.image('button', 'images/Button.png');
+        
+        // Load the correct button
+        game.load.image('buttoncorrect', 'images/ButtonCorrect.png');
+        
+        // Load the wrong button
+        game.load.image('buttonwrong', 'images/ButtonWrong.png');
+        
+        // Load the Closed Cellar door
+        game.load.image('cellardoorclosed', 'images/CellarDoorClosed.png');
+        
+        // Load the open Cellar door
+        game.load.image('cellardooropen', 'images/CellarDoorOpen.png');
         
         // Load background textures
-        game.load.image('cloud', 'images/cloud.jpg');
-        game.load.image('grass', 'images/grass.jpg');
+        game.load.image('bg', 'images/bg.png');
+    //    game.load.image('grass', 'images/grass.jpg');
 
     },
 
@@ -48,60 +68,52 @@ var dff = {
       //   game.physics.startSystem(Phaser.Physics.P2JS);
         
         // Set the world boundaries
-        game.world.setBounds(0, 0, 800, 600);
+      ///  game.world.setBounds(0, 0, 800, 600);
+        game.physics.setBoundsToWorld();
         
         // Set background color
-      //  game.stage.backgroundColor = '#313131';
+     //   game.stage.backgroundColor = '#313131';
+         
         
         // Create night
-        dff.night = game.add.graphics();
-        dff.night.beginFill(0x000000);
-        dff.night.drawRect(0, 0, game.world.width, game.world.height);
-        dff.night.endFill();
+        tds.night = game.add.graphics();
+        tds.night.beginFill(0x000000);
+        tds.night.drawRect(0, 0, game.world.width, game.world.height);
+        tds.night.endFill();
         
         // Create floor
-        dff.floor = game.add.sprite(0, 0, 'cloud');
+        tds.floor = game.add.sprite(0, 0, 'bg');
         
         // Create bullets
-        dff.bullets = game.add.group();
-        dff.bullets.enableBody = true;
-        dff.bullets.physicsBodyType = Phaser.Physics.ARCADE;
-        dff.bullets.createMultiple(50, 'bullet');
-        dff.bullets.setAll('checkWorldBounds', true);
-        dff.bullets.setAll('outOfBoundsKill', true);
-        dff.fireRate = 100;
-        dff.nextFire = 0;
+        tds.bullets = game.add.group();
+        tds.bullets.enableBody = true;
+        tds.bullets.physicsBodyType = Phaser.Physics.ARCADE;
+
+        tds.bullets.createMultiple(50, 'bullet');
+        tds.bullets.setAll('checkWorldBounds', true);
+        for(var p = 0; p < 50; p++)
+        {
+            tds.bullets.children[p].events.onOutOfBounds.add(tds.goodbye, this);
+        }
+        
+     //   tds.bullets.setAll('outOfBoundsKill', true);
+     
+        tds.fireRate = 100;
+        tds.nextFire = 0;
+        tds.bulletIndex = 0;
         
         
         // Set the light radius
-        dff.lightRadius = 200;
+        tds.lightRadius = 200;
     
         
         // Create a player
-        dff.player = new Player(game, {x: game.camera.width/2, y: game.camera.height/2}, 'mainCharacter');
+        tds.player = new Player(game, {x: game.camera.width/2, y: game.camera.height/2}, 'mainCharacter');
         
         
         // Create monsters
-        dff.monsters = game.add.group();
-        dff.monstersAfterPlayerDead = game.add.group();
-        /*
-        for (var i = 0; i < 5; i++)
-        {
-            dff.x = game.rnd.between(0, 800);
-            dff.y = game.rnd.between(0, 600);
-        
-            while(Math.abs(dff.x - dff.player.position.x) < dff.lightRadius && Math.abs(dff.y - dff.player.position.y) < dff.lightRadius)
-            {
-                dff.x = game.rnd.between(0, 800);
-                dff.y = game.rnd.between(0, 600);
-            }
-
-            // Change to be random speed
-            dff.monsters.add(new FollowTarget(game, {x: dff.x,  y: dff.y }, dff.player, 'airplane'));
-
-        }
-        */
-        
+        tds.monsters = game.add.group();
+        tds.monstersAfterPlayerDead = game.add.group();
         
         
         
@@ -115,31 +127,79 @@ var dff = {
         // Set the blend mode to MULTIPLY. This will darken the colors of
         // everything below this sprite.
         lightSprite.blendMode = Phaser.blendModes.MULTIPLY;
-        
+        tds.poo = true;
         
         // Make the camera follow the main player
-         game.camera.follow(dff.player, Phaser.Camera.FOLLOW_TOPDOWN);
+         game.camera.follow(tds.player, Phaser.Camera.FOLLOW_TOPDOWN);
          
          
          // Current wave
-         dff.wave = 1;
-         dff.newLevel = true;
+         tds.wave = 1;
+         tds.newLevel = true;
          
          // Timer
-         dff.deathTimer = 0;
-         dff.respawnMonsterTime = 2;
-         dff.monstersSpriteSizeTimer = 0;
+         tds.deathTimer = 0;
+         tds.respawnMonsterTime = 2;
+         tds.monstersSpriteSizeTimer = 0;
 
         // Size of monsters sprite after player has died
-         dff.monstersSpriteSize = 1;
+         tds.monstersSpriteSize = 1;
          
-         dff.isReleaseOnce = true;
+         tds.isReleaseOnce = true;
          
      
     },
 
     update: function() {
         
+        // Creates the level
+        tds.createLevel();
+        
+        // Determines if new level
+        tds.determineIfNextLevel();
+        
+        
+        // If mouse click
+        if (game.input.activePointer.isDown && tds.player.alive)
+        {
+            // If time is greater than nextFire
+            if (game.time.now > tds.nextFire && tds.bullets.countDead() > 0)
+            {
+                // Add the current game time and fire rate
+                tds.nextFire = game.time.now + tds.fireRate;
+        
+              //  var bullet = tds.bullets.getFirstDead();
+                var bullet = tds.bullets.children[tds.bulletIndex];
+                
+        
+                // Reset the bullet to be on the player
+                bullet.reset(tds.player.x, tds.player.y);
+                bullet.anchor.set(0.5);
+                
+                bullet.rotation = tds.player.getRotation();
+        
+                // Move the bullet to the pointer position
+                game.physics.arcade.moveToPointer(bullet, 300);
+                
+                tds.bulletIndex++;
+            }
+        }
+        
+        if(tds.poo)
+        {
+            
+        
+            // Create an object that will use the bitmap as a texture
+            var lightSprite = this.game.add.image(0, 0, this.shadowTexture);
+        
+            // Set the blend mode to MULTIPLY. This will darken the colors of
+            // everything below this sprite.
+            lightSprite.blendMode = Phaser.blendModes.MULTIPLY;
+            
+            
+            tds.poo = false;
+            
+        }
 
         // Draw shadow texture
         this.shadowTexture.context.fillStyle = 'rgb(0, 0, 0)';
@@ -147,59 +207,86 @@ var dff = {
     
         // Draw circle of light with a soft edge
         var gradient = this.shadowTexture.context.createRadialGradient(
-            dff.player.x, dff.player.y, dff.lightRadius * 0.5,
-            dff.player.x, dff.player.y, dff.lightRadius);
-            
-        
+            tds.player.x, tds.player.y, tds.lightRadius * 0.5,
+            tds.player.x, tds.player.y, tds.lightRadius);
+
         gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
         gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+        
         
 
         this.shadowTexture.context.beginPath();
         this.shadowTexture.context.fillStyle = gradient;
-        this.shadowTexture.context.arc(dff.player.x, dff.player.y,
-            dff.lightRadius, 0, Math.PI*2);
+        this.shadowTexture.context.arc(tds.player.x, tds.player.y,
+            tds.lightRadius, 0, Math.PI*2);
+        this.shadowTexture.context.fill();
+            
+            
+            /*
+         // Draw circle of light with a soft edge
+        var gradient1 = this.shadowTexture.context.createRadialGradient(
+            tds.monsters.getFirstAlive().position.x, tds.monsters.getFirstAlive().position.y, tds.lightRadius * 0.5,
+            tds.monsters.getFirstAlive().position.x, tds.monsters.getFirstAlive().position.y, tds.lightRadius);
+
+        gradient1.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        gradient1.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+        
+        this.shadowTexture.context.fillStyle = gradient1;
+        this.shadowTexture.context.arc(tds.monsters.getFirstAlive().position.x, tds.monsters.getFirstAlive().position.y,
+            tds.lightRadius, 0, Math.PI*2);
         this.shadowTexture.context.fill();
     
         // This just tells the engine it should update the texture cache
         this.shadowTexture.dirty = true;
+        */
         
-        // Creates the level
-        dff.createLevel();
+     //   if(tds.bullets.children.countLiving > 0)
+      //  {
+            
+            for(var i = 0; i < tds.bulletIndex; i++)
+            {
+                
+                if(tds.bullets.children[i].alive)
+               {
+                // Draw circle of light with a soft edge
+        var gradient1 = this.shadowTexture.context.createRadialGradient(
+            tds.bullets.children[i].position.x, tds.bullets.children[i].position.y, tds.lightRadius * 0.5,
+            tds.bullets.children[i].position.x, tds.bullets.children[i].position.y, tds.lightRadius);
+
+        gradient1.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        gradient1.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
         
-        // Determines if new level
-        dff.determineIfNextLevel();
+        this.shadowTexture.context.fillStyle = gradient1;
+        this.shadowTexture.context.arc(tds.bullets.children[i].position.x, tds.bullets.children[i].position.y,
+            tds.lightRadius, 0, Math.PI*2);
+        this.shadowTexture.context.fill();
+    
+        // This just tells the engine it should update the texture cache
+        this.shadowTexture.dirty = true;
+                }
+                
+          
+            }
+            
+            
+        
+       // }
+        
+
         
         // If Main character has died this will be called
-        dff.userDeath();
+        tds.userDeath();
         
-        // If mouse click
-        if (game.input.activePointer.isDown && dff.player.alive)
-        {
-            // If time is greater than nextFire
-            if (game.time.now > dff.nextFire && dff.bullets.countDead() > 0)
-            {
-                // Add the current game time and fire rate
-                dff.nextFire = game.time.now + dff.fireRate;
         
-                var bullet = dff.bullets.getFirstDead();
-        
-                // Reset the bullet to be on the player
-                bullet.reset(dff.player.x, dff.player.y);
-        
-                // Move the bullet to the pointer position
-                game.physics.arcade.moveToPointer(bullet, 300);
-                
-        
-            }
-        }
         
         // If bullets overlap monsters then call collisionHandler
-        game.physics.arcade.overlap(dff.bullets, dff.monsters, dff.collisionHandler, null, this);
+        game.physics.arcade.overlap(tds.bullets, tds.monsters, tds.collisionHandler, null, this);
         
         
-      //  game.physics.arcade.collide(dff.monsters, this.target, this.collisionHandler, null, this);
-      game.physics.arcade.collide(dff.monstersAfterPlayerDead, dff.monsters, dff.monstersAfterPlayerDeadCollisionHandler);
+      //  game.physics.arcade.collide(tds.monsters, this.target, this.collisionHandler, null, this);
+      game.physics.arcade.collide(tds.monstersAfterPlayerDead, tds.monsters, tds.monstersAfterPlayerDeadCollisionHandler);
+      
+      
    
     },
 
@@ -209,16 +296,21 @@ var dff = {
         // this.cloudMask.drawCircle(this.body.position.x, this.body.position.y, 100);
         // this.cloudMask.endFill();
 
-      //  game.debug.text('Spawn:' + dff.newLevel, dff.player.x, dff.player.y + 32, 'rgba(255,0,255,1)', null);
-        game.debug.text('Alive: ' + dff.monsters.countLiving(), dff.player.x, dff.player.y + 64, 'rgba(255,0,255,1)', null);
-     //   game.debug.text('Timer: ' + dff.deathTimer, dff.player.x, dff.player.y + 96, 'rgba(255,0,255,1)', null);
-     game.debug.text('Door ready:' + dff.door.isTargetEnterDoor, dff.player.x, dff.player.y + 32, 'rgba(255,0,255,1)', null);
+        game.debug.text('Spawn:' + tds.newLevel, tds.player.x, tds.player.y + 32, 'rgba(255,0,255,1)', null);
+        game.debug.text('Alive: ' + tds.monsters.countLiving(), tds.player.x, tds.player.y + 64, 'rgba(255,0,255,1)', null);
+        game.debug.body(tds.bullets.children[0]);
+  //   game.debug.body(tds.player);
+     //   game.debug.text('Timer: ' + tds.deathTimer, tds.player.x, tds.player.y + 96, 'rgba(255,0,255,1)', null);
+   //  game.debug.text('Door ready:' + tds.door.isTargetEnterDoor, tds.player.x, tds.player.y + 32, 'rgba(255,0,255,1)', null);
      
     },
     
     
     collisionHandler: function(bullet, monster) {
         monster.kill();
+        bullet.body.velocity.x = 0;
+        bullet.body.velocity.y = 0;
+        bullet.body.enable = false;
     },
     
     monstersAfterPlayerDeadCollisionHandler: function(monsters, otherMonsters) {
@@ -227,74 +319,87 @@ var dff = {
     },
     
 
+    goodbye: function(obj) {
+        obj.body.velocity.x = 0;
+        obj.body.velocity.y = 0;
+    },
+    
+
     createLevel: function() {
         
         // Boolean for spawning the wave
-        if(dff.newLevel)
+        if(tds.newLevel)
         {
-            // Wave increases by increments of 5
-            for (var i = 0; i < dff.wave * 5; i++)
-            {
-                // Random number based on the screen
-                dff.x = game.rnd.between(0, 800);
-                dff.y = game.rnd.between(0, 600);
-            
-                // If the monsters position is spawned in light radius then keep trying until its not
-                while(Math.abs(dff.x - dff.player.position.x) < dff.lightRadius && Math.abs(dff.y - dff.player.position.y) < dff.lightRadius)
-                {
-                    dff.x = game.rnd.between(0, 800);
-                    dff.y = game.rnd.between(0, 600);
-                }
-    
-                // Change to be random speed
-                dff.monsters.add(new FollowTarget(game, {x: dff.x,  y: dff.y }, dff.player, 'airplane'));
-    
-            }
-            
-            
+           for(var c = 0; c < tds.bullets.children.length; c++)
+           {
+          //     tds.bullets.children[c].reset(0,0);
+           }
             
             // Random number based on the screen
-            dff.doorX = game.rnd.between(0, 800);
-            dff.doorY = game.rnd.between(0, 600);
+            tds.doorX = game.rnd.between(0, 800);
+            tds.doorY = game.rnd.between(0, 600);
             
             // Create door
-            dff.door = new Door(game, {x: dff.doorX, y: dff.doorY}, dff.player, 'mainCharacter');
+            tds.door = new Door(game, {x: tds.doorX, y: tds.doorY}, tds.player, 'cellardoorclosed', 'cellardooropen');
             
             
-            dff.realButtonX = game.rnd.between(0, 800);
-            dff.realButtonY = game.rnd.between(0, 600);
+            tds.realButtonX = game.rnd.between(0, 800);
+            tds.realButtonY = game.rnd.between(0, 600);
             
             // If the monsters position is spawned in light radius then keep trying until its not
-            while(Math.abs(dff.realButtonX - dff.doorX) < 100 && Math.abs(dff.realButtonY - dff.doorY) < 100)
+            while(Math.abs(tds.realButtonX - tds.doorX) > 130 && Math.abs(tds.realButtonY - tds.doorY) > 130)
             {
-                dff.realButtonX = game.rnd.between(0, 800);
-                dff.realButtonY = game.rnd.between(0, 600);
+                tds.realButtonX = game.rnd.between(0, 800);
+                tds.realButtonY = game.rnd.between(0, 600);
             }
              
             // Create the real button
-            dff.realButton = new Button(game,{x: dff.realButtonX, y: dff.realButtonY}, dff.player, dff.door, true, 'mainCharacter');
+            tds.realButton = new Button(game,{x: tds.realButtonX, y: tds.realButtonY}, tds.player, tds.door, true, 'button', 'buttoncorrect', 'buttonwrong');
             
             
             
-            dff.fakeButtonX = game.rnd.between(0, 800);
-            dff.fakeButtonY = game.rnd.between(0, 600);
+            tds.fakeButtonX = game.rnd.between(0, 800);
+            tds.fakeButtonY = game.rnd.between(0, 600);
             
             // If the monsters position is spawned in light radius then keep trying until its not
-            while(Math.abs(dff.fakeButtonX - dff.doorX) < 100 && Math.abs(dff.fakeButtonY - dff.doorY) < 100 &&
-            Math.abs(dff.fakeButtonX - dff.realButtonX) < 100 && Math.abs(dff.fakeButtonY - dff.realButtonY) < 100)
+            while(Math.abs(tds.fakeButtonX - tds.doorX) > 130 && Math.abs(tds.fakeButtonY - tds.doorY) > 130 &&
+            Math.abs(tds.fakeButtonX - tds.realButtonX) > 100 && Math.abs(tds.fakeButtonY - tds.realButtonY) > 100)
             {
-                dff.fakeButtonX = game.rnd.between(0, 800);
-                dff.fakeButtonY = game.rnd.between(0, 600);
+                tds.fakeButtonX = game.rnd.between(0, 800);
+                tds.fakeButtonY = game.rnd.between(0, 600);
             }
             
             
             // Create the fake button
-            dff.fakeButton = new Button(game,{x: dff.fakeButtonX, y: dff.fakeButtonY}, dff.player, dff.door, false, 'mainCharacter');
+            tds.fakeButton = new Button(game,{x: tds.fakeButtonX, y: tds.fakeButtonY}, tds.player, tds.door, false, 'button', 'buttoncorrect', 'buttonwrong');
+            
+            
+            
+             // Wave increases by increments of 5
+            for (var i = 0; i < tds.wave * 3; i++)
+            {
+                // Random number based on the screen
+                tds.x = game.rnd.between(0, 800);
+                tds.y = game.rnd.between(0, 600);
+            
+                // If the monsters position is spawned in light radius then keep trying until its not
+                while(Math.abs(tds.x - tds.player.position.x) < tds.lightRadius && Math.abs(tds.y - tds.player.position.y) < tds.lightRadius)
+                {
+                    tds.x = game.rnd.between(0, 800);
+                    tds.y = game.rnd.between(0, 600);
+                }
+    
+                // Change to be random speed
+                tds.monsters.add(new FollowTarget(game, {x: tds.x,  y: tds.y }, tds.player, 'monster'));
+    
+            }
+            
             
             // Set boolean to false
-            dff.newLevel = false;
+            tds.newLevel = false;
             
-            dff.isReleaseOnce = true;
+            tds.isReleaseOnce = true;
+            tds.poo = true;
         }
         
         
@@ -304,7 +409,7 @@ var dff = {
     userDeath: function() {
         
         // If the player is not alive
-        if(!dff.player.alive)
+        if(!tds.player.alive)
         {
             // Display how many holes you fell through
             
@@ -314,47 +419,48 @@ var dff = {
             
             
             // Start timer
-            dff.deathTimer = dff.deathTimer + 0.01;
+            tds.deathTimer = tds.deathTimer + 0.01;
             
             // If the timer is greater than respawnMosnterTime
-            if(dff.deathTimer > dff.respawnMonsterTime)
+            if(tds.deathTimer > tds.respawnMonsterTime)
             {
                 // Random number based on the screen
-                dff.x = game.rnd.between(0, 800);
-                dff.y = game.rnd.between(0, 600);
+                tds.x = game.rnd.between(0, 800);
+                tds.y = game.rnd.between(0, 600);
             
                 // If the monsters position is spawned in light radius then keep trying until its not
-                while(Math.abs(dff.x - dff.player.position.x) < dff.lightRadius && Math.abs(dff.y - dff.player.position.y) < dff.lightRadius)
+                while(Math.abs(tds.x - tds.player.position.x) < tds.lightRadius && Math.abs(tds.y - tds.player.position.y) < tds.lightRadius)
                 {
-                    dff.x = game.rnd.between(0, 800);
-                    dff.y = game.rnd.between(0, 600);
+                    tds.x = game.rnd.between(0, 800);
+                    tds.y = game.rnd.between(0, 600);
                 }
     
-                dff.tempMonster = new FollowTarget(game, {x: dff.x,  y: dff.y }, dff.player, 'airplane');
+                tds.tempMonster = new FollowTarget(game, {x: tds.x,  y: tds.y }, tds.player, 'monster');
+                tds.tempMonster.game.world.bringToTop(tds.tempMonster);
                 
                 // Timer
-                dff.monstersSpriteSizeTimer = dff.monstersSpriteSizeTimer + 0.1;
+                tds.monstersSpriteSizeTimer = tds.monstersSpriteSizeTimer + 0.1;
                 
-                if(dff.monstersSpriteSizeTimer > 20)
+                if(tds.monstersSpriteSizeTimer > 20)
                 {
-                    dff.monstersSpriteSize = dff.monstersSpriteSize + 5;
-                    dff.monstersSpriteSizeTimer = 0;
+                    tds.monstersSpriteSize = tds.monstersSpriteSize + 5;
+                    tds.monstersSpriteSizeTimer = 0;
                 }
                 
                 // Set sprite size
-                dff.tempMonster.body.width = dff.monstersSpriteSize;
-                dff.tempMonster.body.height = dff.monstersSpriteSize;
+                tds.tempMonster.body.width = tds.monstersSpriteSize;
+                tds.tempMonster.body.height = tds.monstersSpriteSize;
                 
                 
                 // Change to be random speed
-                dff.monstersAfterPlayerDead.add(dff.t);
+                tds.monstersAfterPlayerDead.add(tds.tempMonster);
                 
                 
                 // Reset timer
-                dff.deathTimer = 0;
+                tds.deathTimer = 0;
                 
                 // Set random repawn monster time
-                dff.respawnMonsterTime = game.rnd.between(0.5,3);
+                tds.respawnMonsterTime = game.rnd.between(0.5,3);
                 
                 
                 
@@ -369,53 +475,62 @@ var dff = {
      */
     determineIfNextLevel: function() {
         
-        // If all the monsters are dead then start the next wave
-        if(dff.door.isTargetEnterDoor)
+        
+        if(tds.player.isNextLevel)
         {
-            dff.door.isTargetEnterDoor = false;
+            tds.player.isNextLevel = false;
             
             // Boolean for spawning the monsters
-            dff.newLevel = true;
+            tds.newLevel = true;
             
             // Increase the wave increment
-            dff.wave = dff.wave + 1;
+            tds.wave = tds.wave + 1;
             
             // Kill all remaining monsters
-            dff.monsters.removeBetween(0, dff.monsters.countLiving() - 1);
+            tds.monsters.removeBetween(0, tds.monsters.countLiving() - 1);
+            
+            tds.bullets.removeBetween(0, tds.bullets.children.length - 1);
+            tds.bullets.createMultiple(50, 'bullet');
+            tds.bullets.setAll('checkWorldBounds', true);
+            for(var p = 0; p < 50; p++)
+            {
+                tds.bullets.children[p].events.onOutOfBounds.add(tds.goodbye, this);
+            }
             
             // Remove the door and buttons
-            dff.door.destroy();
-            dff.realButton.destroy();
-            dff.fakeButton.destroy();
+            tds.door.destroy();
+            tds.realButton.destroy();
+            tds.fakeButton.destroy();
+            tds.poo = true;
         }
         
-        if(dff.fakeButton.isReleaseMonsters && dff.isReleaseOnce)
+        if(tds.fakeButton.isReleaseMonsters && tds.isReleaseOnce)
         {
              // Wave increases by increments of 5
             for (var i = 0; i < 5; i++)
             {
                 // Random number based on the screen
-                dff.x = game.rnd.between(0, 800);
-                dff.y = game.rnd.between(0, 600);
+                tds.x = game.rnd.between(0, 800);
+                tds.y = game.rnd.between(0, 600);
             
                 // If the monsters position is spawned in light radius then keep trying until its not
-                while(Math.abs(dff.x - dff.player.position.x) < dff.lightRadius && Math.abs(dff.y - dff.player.position.y) < dff.lightRadius)
+                while(Math.abs(tds.x - tds.player.position.x) < tds.lightRadius && Math.abs(tds.y - tds.player.position.y) < tds.lightRadius)
                 {
-                    dff.x = game.rnd.between(0, 800);
-                    dff.y = game.rnd.between(0, 600);
+                    tds.x = game.rnd.between(0, 800);
+                    tds.y = game.rnd.between(0, 600);
                 }
     
                 // Change to be random speed
-                dff.tempFastMonster = new FollowTarget(game, {x: dff.x,  y: dff.y }, dff.player, 'airplane');
-                dff.tempFastMonster.speed = dff.tempFastMonster.speed * dff.wave;
-                dff.monsters.add(dff.tempFastMonster);
+                tds.tempFastMonster = new FollowTarget(game, {x: tds.x,  y: tds.y }, tds.player, 'monsterspecial');
+                tds.tempFastMonster.speed = tds.tempFastMonster.speed * tds.wave;
+                tds.monsters.add(tds.tempFastMonster);
                 
                 
     
             }
             
-            dff.fakeButton.isReleaseMonsters = false;
-            dff.isReleaseOnce = false;
+            tds.fakeButton.isReleaseMonsters = false;
+            tds.isReleaseOnce = false;
         }
     }
     
@@ -424,7 +539,7 @@ var dff = {
 };
 
 window.onload = function(){
-    dff.start();
+    tds.start();
 }
 
 

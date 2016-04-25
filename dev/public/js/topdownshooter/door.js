@@ -1,16 +1,21 @@
 /*
  * Exit door is closed until button is touched by main character.
  */
-function Door(game, position, target, resourceName) {
+function Door(game, position, target, closedImage, openImage) {
 
 
-    Phaser.Sprite.call(this, game, position.x, position.y, resourceName);
+    Phaser.Sprite.call(this, game, position.x, position.y, closedImage);
 
     // Add sprite to game
     game.add.existing(this);
     
+    this.openImage = openImage;
+    
     // Set the game variable for update
     this.game = game;
+    
+    this.scale.x = 0.4;
+    this.scale.y = 0.4;
     
     
     // Boolean for if door open
@@ -26,6 +31,9 @@ function Door(game, position, target, resourceName) {
     
     this.body.collideWorldBounds = true;
     
+    this.doOnce = true;
+    
+    this.body.setSize(100, 100, 60, 50);
 
     
 
@@ -48,6 +56,13 @@ Door.prototype.update = function() {
     // If this sprite intersects with the target this call function collisionHandler
     this.game.physics.arcade.overlap(this, this.target, this.collisionHandler, null, this);
 
+    if(this.isDoorOpen && this.doOnce)
+    {
+        this.position.x = this.position.x - 30;
+        // Change sprite to opened door
+        this.loadTexture(this.openImage);
+        this.doOnce = false;
+    }
     
 };
 
@@ -60,6 +75,7 @@ Door.prototype.collisionHandler = function(door, mainChar) {
     if(this.isDoorOpen)
     {
         this.isTargetEnterDoor = true;
+        mainChar.isFalling = true;
     }
 
 };

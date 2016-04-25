@@ -26,7 +26,9 @@ function FollowTarget(game, position, target, resourceName) {
     
     this.body.collideWorldBounds = true;
     
-
+    this.body.setSize(52, 52, -5, -10);
+    
+    
     
 
 }
@@ -64,7 +66,8 @@ FollowTarget.prototype.update = function() {
     this.rotation = this.game.physics.arcade.angleBetween(this, this.target);
     
    
-    
+    // Make the player on top of graphics
+  //  this.game.world.bringToTop(this);
     
 
 };
@@ -79,4 +82,5 @@ FollowTarget.prototype.collisionHandler = function(followingTarget, mainChar) {
     mainChar.kill();
 
 };
+
 

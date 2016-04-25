@@ -1,13 +1,16 @@
 /*
  * Button in game.  If main character touches it then it either opens the exit door or releases enemies.
  */
-function Button(game, position, target, door, isRealButton, resourceName) {
+function Button(game, position, target, door, isRealButton, buttonImage, correctButtonImage, wrongButtonImage) {
 
 
-    Phaser.Sprite.call(this, game, position.x, position.y, resourceName);
+    Phaser.Sprite.call(this, game, position.x, position.y, buttonImage);
 
     // Add sprite to game
     game.add.existing(this);
+    
+    this.correctButtonImage = correctButtonImage;
+    this.wrongButtonImage = wrongButtonImage;
     
     // Set the game variable for update
     this.game = game;
@@ -66,11 +69,13 @@ Button.prototype.collisionHandler = function(button, mainChar) {
     if(this.isRealButton)
     {
         this.exitDoor.isDoorOpen = true;
+        this.loadTexture(this.correctButtonImage);
     }
     else
     {
         // Unlease da enemies
         this.isReleaseMonsters = true;
+        this.loadTexture(this.wrongButtonImage);
     }
 
 
