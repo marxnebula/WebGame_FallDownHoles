@@ -1,9 +1,11 @@
 /*
- * Sprite follows the target.
+ * Used for monster to follow player.
+ * If the monster touches the player then the player dies.
+ * Monster receives a random speed.
  */
 function FollowTarget(game, position, target, resourceName) {
 
-
+    // First call the parent constructor
     Phaser.Sprite.call(this, game, position.x, position.y, resourceName);
 
     // Add sprite to game
@@ -16,7 +18,7 @@ function FollowTarget(game, position, target, resourceName) {
     this.anchor.set(0.5);
    
     // Speed of movement
-    this.speed = game.rnd.between(10, 50);
+    this.speed = game.rnd.between(10, 30);
     
     // Assign target that the object follows
     this.target = target;
@@ -24,8 +26,10 @@ function FollowTarget(game, position, target, resourceName) {
     // Enable physics for dis sprite
     game.physics.enable(this, Phaser.Physics.ARCADE);
     
+    // Set the collideWorldBounds to true
     this.body.collideWorldBounds = true;
     
+    // Set the collider size
     this.body.setSize(52, 52, -5, -10);
     
     
@@ -63,11 +67,8 @@ FollowTarget.prototype.update = function() {
     // If this sprite intersects with the target this call function collisionHandler
     this.game.physics.arcade.collide(this, this.target, this.collisionHandler, null, this);
     
+    // Set the rotation to be looking at the target
     this.rotation = this.game.physics.arcade.angleBetween(this, this.target);
-    
-   
-    // Make the player on top of graphics
-  //  this.game.world.bringToTop(this);
     
 
 };

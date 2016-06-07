@@ -1,5 +1,8 @@
 /* 
- *  Player object
+ * Player object.
+ * Player can shoot bullets.
+ * If player collides with monster then player dies.
+ * If player collides with button then it opens exit door or releases monsters.
  */
 function Player(game, position, resourceName){
     
@@ -12,24 +15,23 @@ function Player(game, position, resourceName){
     // Players speed
     this.speed = 400;
     
-    // Holds previous positions of the player
-    this.path = [];
-
     // Add sprite to game
     game.add.existing(this);
     
     // Enable physics for dis sprite
     game.physics.enable(this, Phaser.Physics.ARCADE);
     
+    // Set collideWorldBounds to true
     this.body.collideWorldBounds = true;
    
     
     // Phaser physics body properties
-   this.anchor.set(0.5);
+    this.anchor.set(0.5);
     this.body.collideWorldBounds = true;
     this.body.bounce.setTo(0.1, 0.1);
     this.body.drag = 100;
     
+    // Set booleans to false
     this.isFalling = false;
     this.isNextLevel = false;
     
@@ -42,10 +44,13 @@ function Player(game, position, resourceName){
     this.s = game.input.keyboard.addKey(Phaser.Keyboard.S);
     this.d = game.input.keyboard.addKey(Phaser.Keyboard.D);
     
+    
+    // Set the scale
     this.scale.x = 1.3;
     this.scale.y = 1.3;
     
-   this.body.setSize(25, 25, 0, 0);
+    // Set the collider size
+    this.body.setSize(25, 25, 0, 0);
     
 }
 // Inherit the Phaser.Sprite prototype
@@ -70,13 +75,16 @@ Player.prototype.update = function(){
     // Make the player on top of graphics
     this.game.world.bringToTop(this);
     
+    // If isFalling is true
     if(this.isFalling)
     {
+        // Call the function enterCellarDoor()
         this.enterCellarDoor();
     }
     else
     {
-        this.fallDown();
+        // Call the function enterNewLevel()
+        this.enterNewLevel();
     }
     
 };
@@ -95,6 +103,7 @@ Player.prototype.move = function(){
     this.body.velocity.x = 0;
     this.body.velocity.y = 0;
     
+    // If isFalling is false
     if(this.isFalling == false)
     {
         // If left arrow or 'a' is down
@@ -122,24 +131,35 @@ Player.prototype.move = function(){
 
 };
 
+
+/*
+ * Function that returns the players rotation.
+ */
 Player.prototype.getRotation = function(){
     
     return this.rotation;
     
 };
 
+/*
+ * Function that decreases the scale of the player when they enter the exit door.
+ */
 Player.prototype.enterCellarDoor = function(){
     
     
-    
+    // If the scale of the player is greater than 0
     if(this.scale.x > 0)
     {
+        // Decrease the scale by increments of 0.025
         this.scale.setTo(this.scale.x - 0.025, this.scale.y - 0.025);
     }
     else
     {
+        // Set booleans
         this.isNextLevel = true;
         this.isFalling = false;
+        
+        // Set scale to much larger
         this.scale.setTo(3, 3);
     }
     
@@ -147,19 +167,22 @@ Player.prototype.enterCellarDoor = function(){
 };
 
 
-
-Player.prototype.fallDown = function(){
+/*
+ * Function that decreases the scale of the player when they have entered into a new level.
+ */
+Player.prototype.enterNewLevel = function(){
     
     
-    
+    // If scale is greater than 1.4
     if(this.scale.x > 1.4)
     {
+        // Decrease scale by increments of 0.07
         this.scale.setTo(this.scale.x - 0.07, this.scale.y - 0.07);
     }
     else
     {
+        // Set scale to 1.3
         this.scale.setTo(1.3, 1.3);
-        
     }
     
     

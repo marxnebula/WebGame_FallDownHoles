@@ -1,9 +1,10 @@
 /*
- * Button in game.  If main character touches it then it either opens the exit door or releases enemies.
+ * Button to be pressed by player in game.  
+ * If main character touches it then it either opens the exit door or releases enemies based on it being the fake or real button
  */
 function Button(game, position, target, door, isRealButton, buttonImage, correctButtonImage, wrongButtonImage) {
 
-
+    // First call the parent constructor
     Phaser.Sprite.call(this, game, position.x, position.y, buttonImage);
 
     // Add sprite to game
@@ -18,8 +19,10 @@ function Button(game, position, target, door, isRealButton, buttonImage, correct
     // Set the exit door
     this.exitDoor = door;
     
+    // Set if it is the real button or not
     this.isRealButton = isRealButton;
     
+    // Boolean used to release monsteres if fake button pressed
     this.isReleaseMonsters = false;
 
     
@@ -29,6 +32,7 @@ function Button(game, position, target, door, isRealButton, buttonImage, correct
     // Enable physics for dis sprite
     game.physics.enable(this, Phaser.Physics.ARCADE);
     
+    // Set collide world bounds to true
     this.body.collideWorldBounds = true;
     
 
@@ -48,15 +52,8 @@ Button.prototype.constructor = Button;
  */
 Button.prototype.update = function() {
 
-
-
     // If this sprite intersects with the target this call function collisionHandler
     this.game.physics.arcade.overlap(this, this.target, this.collisionHandler, null, this);
-
-    
-   
-    
-    
 
 };
 
@@ -66,15 +63,22 @@ Button.prototype.update = function() {
  */
 Button.prototype.collisionHandler = function(button, mainChar) {
 
+    // If it is the real button
     if(this.isRealButton)
     {
+        // Open the exit door
         this.exitDoor.isDoorOpen = true;
+        
+        // Change the button texture to the correctButtonImage
         this.loadTexture(this.correctButtonImage);
     }
+    // If it is not the real button
     else
     {
         // Unlease da enemies
         this.isReleaseMonsters = true;
+        
+        // Chance the button texture to the wrongButtonImage
         this.loadTexture(this.wrongButtonImage);
     }
 
